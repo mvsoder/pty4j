@@ -9,9 +9,12 @@ import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
+
 import jtermios.windows.WinAPI;
 
 import java.nio.Buffer;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author traff
@@ -100,6 +103,11 @@ public class WinPty {
     public WinNT.HANDLE dataPipe;
     public WinNT.HANDLE errDataPipe;
     public boolean open;
+
+    @Override
+		protected List<?> getFieldOrder() {
+			return Arrays.asList( new String[] { "controlPipe", "dataPipe", "errDataPipe", "open" } );
+		}
   }
 
   public static final Kern32 KERNEL32 = (Kern32)Native.loadLibrary("kernel32", Kern32.class);
