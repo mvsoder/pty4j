@@ -21,6 +21,7 @@
 package com.pty4j;
 
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Scanner;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.TestCase;
 
+import com.pty4j.util.PtyUtil;
 import com.sun.jna.Platform;
 
 
@@ -37,6 +39,11 @@ import com.sun.jna.Platform;
  * Test cases for {@link com.pty4j.unix.PtyHelpers}.
  */
 public class PtyTest extends TestCase {
+	
+	static {
+		PtyUtil.setPtyLibFolderPath( System.getProperty( "user.dir" ) + File.separator + "os" );
+	}
+	
   static class Command {
     final String m_command;
     final String[] m_args;
@@ -255,16 +262,21 @@ public class PtyTest extends TestCase {
     // Asynchronously wait for the process to end...
     Thread t = new Thread() {
       public void run() {
+      	Scanner s = null;
         try {
-          Scanner s = new Scanner(pty.getInputStream());
+          s = new Scanner(pty.getInputStream());
           while (s.hasNextLine()) {
             System.out.println(s.nextLine());
           }
-          result[0] = pty.waitFor();
+          pty.waitFor(10, TimeUnit.SECONDS);
+          result[0] = pty.exitValue();
 
           latch.countDown();
         } catch (InterruptedException e) {
           // Simply stop the thread...
+        	e.printStackTrace();
+        } finally {
+        	if(s != null) s.close();
         }
       }
     };
@@ -273,6 +285,7 @@ public class PtyTest extends TestCase {
     assertTrue("Child already terminated?!", pty.isRunning());
 
     assertTrue(latch.await(10, TimeUnit.SECONDS));
+    assertEquals( 0, result[0] );
 
     t.join();
 
@@ -283,22 +296,23 @@ public class PtyTest extends TestCase {
    * Tests that getting and setting the window size for a file descriptor works.
    */
   public void testGetAndSetWinSize() throws Exception {
+  	int rows = 30;
+  	int cols = 120;
+  	
     String[] cmd = preparePingCommand(2);
 
     PtyProcess pty = PtyProcess.exec(cmd);
 
-    WinSize ws = new WinSize();
-    ws.ws_col = 120;
-    ws.ws_row = 30;
+    WinSize ws = new WinSize(cols, rows);
     pty.setWinSize(ws);
 
     WinSize ws1 = pty.getWinSize();
 
     assertNotNull(ws1);
-    assertEquals(120, ws1.ws_col);
-    assertEquals(30, ws1.ws_row);
+    assertEquals(cols, ws1.ws_col);
+    assertEquals(rows, ws1.ws_row);
 
-    pty.waitFor();
+    //pty.waitFor(10,TimeUnit.SECONDS);
   }
 
   private String[] preparePingCommand(int count) {
