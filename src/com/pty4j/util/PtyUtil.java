@@ -1,15 +1,15 @@
 package com.pty4j.util;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-import com.pty4j.windows.WinPty;
-import com.sun.jna.Platform;
-
 import java.io.File;
 import java.net.URLDecoder;
 import java.security.CodeSource;
 import java.util.List;
 import java.util.Map;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+import com.pty4j.PtyProcess;
+import com.sun.jna.Platform;
 
 /**
  * @author traff
@@ -17,7 +17,7 @@ import java.util.Map;
 public class PtyUtil {
   public static final String OS_VERSION = System.getProperty("os.version").toLowerCase();
 
-  private final static String PTY_LIB_FOLDER = System.getenv("PTY_LIB_FOLDER");
+  private static String PTY_LIB_FOLDER = System.getenv("PTY_LIB_FOLDER");
 
   public static String[] toStringArray(Map<String, String> environment) {
     List<String> list = Lists.transform(Lists.newArrayList(environment.entrySet()), new Function<Map.Entry<String, String>, String>() {
@@ -34,7 +34,7 @@ public class PtyUtil {
    * @param aclass a class to find a jar
    * @return
    */
-  public static String getJarContainingFolderPath(Class aclass) throws Exception {
+  public static String getJarContainingFolderPath(Class<?> aclass) throws Exception {
     CodeSource codeSource = aclass.getProtectionDomain().getCodeSource();
 
     File jarFile;
@@ -56,15 +56,14 @@ public class PtyUtil {
     return jarFile.getParentFile().getAbsolutePath();
   }
 
-  public static String getPtyLibFolderPath() throws Exception {
-    if (PTY_LIB_FOLDER != null) {
-      return PTY_LIB_FOLDER;
-    }
-    //Class aclass = WinPty.class.getClassLoader().loadClass("com.jediterm.pty.PtyMain");
-    Class aclass = WinPty.class;
+	public static String getPtyLibFolderPath() throws Exception {
+		if( PTY_LIB_FOLDER != null ) return PTY_LIB_FOLDER;
+		return getJarContainingFolderPath( PtyProcess.class );
+	}
 
-    return getJarContainingFolderPath(aclass);
-  }
+	public static void setPtyLibFolderPath( String path ) {
+		if( PTY_LIB_FOLDER == null ) PTY_LIB_FOLDER = path;
+	}
 
   public static File resolveNativeLibrary() throws Exception {
     String libFolderPath = getPtyLibFolderPath();
